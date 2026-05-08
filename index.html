@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고등학교 입시 정보 플랫폼</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --text: #e8edf5;
+    --text-muted: #6b7c96;
+    --accent-blue: #3b82f6;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-rose: #f43f5e;
+    --accent-purple: #8b5cf6;
+    --accent-orange: #f97316;
+
+    --인문계: #3b82f6;
+    --특성화고: #10b981;
+    --마이스터고: #f59e0b;
+    --특목고: #8b5cf6;
+    --자사고: #f43f5e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---- TOP NAV ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,14,26,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 64px;
+  }
+  .topbar-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .role-badge {
+    padding: 4px 14px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .role-badge.admin { background: rgba(243,188,60,0.15); color: var(--accent-amber); border: 1px solid rgba(243,188,60,0.3); }
+  .role-badge.student { background: rgba(59,130,246,0.12); color: var(--accent-blue); border: 1px solid rgba(59,130,246,0.25); }
+  .btn {
+    padding: 8px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; transition: all .18s; border: none;
+  }
+  .btn-primary { background: var(--accent-blue); color: #fff; }
+  .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent-blue); }
+  .btn-danger { background: rgba(244,63,94,0.12); color: var(--accent-rose); border: 1px solid rgba(244,63,94,0.25); }
+  .btn-danger:hover { background: rgba(244,63,94,0.22); }
+  .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
+  .btn-success { background: var(--accent-green); color: #fff; }
+  .btn-success:hover { background: #059669; }
+  .btn-amber { background: var(--accent-amber); color: #000; }
+  .btn-amber:hover { background: #d97706; }
+  .btn-purple { background: var(--accent-purple); color: #fff; }
+  .btn-purple:hover { background: #7c3aed; }
+
+  /* ---- HERO ---- */
+  .hero {
+    position: relative; z-index: 1;
+    padding: 60px 32px 40px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--text-muted); font-size: 1rem; max-width: 500px; margin: 0 auto; }
+
+  /* ---- SCHOOL TYPE TABS ---- */
+  .tabs-section {
+    position: relative; z-index: 1;
+    padding: 0 32px 24px;
+    max-width: 1400px; margin: 0 auto;
+  }
+  .tabs {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all .18s;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .tab-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .tab-btn.active { color: #fff; border-color: transparent; }
+  .tab-btn[data-type="전체"].active { background: linear-gradient(135deg,#3b82f6,#06b6d4); }
+  .tab-btn[data-type="인문계"].active { background: var(--인문계); }
+  .tab-btn[data-type="특성화고"].active { background: var(--특성화고); }
+  .tab-btn[data-type="마이스터고"].active { background: var(--마이스터고); color: #000; }
+  .tab-btn[data-type="특목고"].active { background: var(--특목고); }
+  .tab-btn[data-type="자사고/자공고"].active { background: var(--자사고); }
+
+  /* ---- SCHOOL INFO CARDS ---- */
+  .school-info-section {
+    position: relative; z-index: 1;
+    max-width: 1400px; margin: 0 auto;
+    padding: 0 32px 32px;
+  }
+  .school-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .school-info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, border-color .2s;
+    cursor: pointer;
+  }
+  .school-info-card:hover { transform: translateY(-3px); }
+  .school-info-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .school-info-card[data-type="인문계"]::before { background: var(--인문계); }
+  .school-info-card[data-type="특성화고"]::before { background: var(--특성화고); }
+  .school-info-card[data-type="마이스터고"]::before { background: var(--마이스터고); }
+  .school-info-card[data-type="특목고"]::before { background: var(--특목고); }
+  .school-info-card[data-type="자사고/자공고"]::before { background: var(--자사고); }
+  .school-info-card[data-type="인문계"]:hover { border-color: var(--인문계); }
+  .school-info-card[data-type="특성화고"]:hover { border-color: var(--특성화고); }
+  .school-info-card[data-type="마이스터고"]:hover { border-color: var(--마이스터고); }
+  .school-info-card[data-type="특목고"]:hover { border-color: var(--특목고); }
+  .school-info-card[data-type="자사고/자공고"]:hover { border-color: var(--자사고); }
+
+  .sic-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 0.68rem; font-weight: 700; margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+  .school-info-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .school-info-card p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; }
+  .sub-categories { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .sub-cat {
+    padding: 2px 8px; border-radius: 5px; font-size: 0.7rem;
+    background: rgba(255,255,255,0.06); color: var(--text-muted);
+  }
+
+  /* ---- CONTENT SECTION ---- */
+  .content-section {
+    position: relative; z-index: 1;
+    max-width: 1400px; margin: 0 auto;
+    padding: 0 32px 60px;
+  }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+  }
+  .section-title { font-size: 1.1rem; font-weight: 700; }
+
+  /* ---- FILTER BAR ---- */
+  .filter-bar {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;
+  }
+  .filter-select {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 14px; border-radius: 8px; font-size: 0.82rem;
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer;
+  }
+  .filter-select:focus { outline: none; border-color: var(--accent-blue); }
+  .search-input {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 14px; border-radius: 8px; font-size: 0.82rem;
+    font-family: 'Noto Sans KR', sans-serif; flex: 1; min-width: 180px;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent-blue); }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  /* ---- POST LIST ---- */
+  .posts-list { display: flex; flex-direction: column; gap: 14px; }
+  .post-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 24px;
+    transition: all .2s; cursor: pointer;
+    position: relative; overflow: hidden;
+  }
+  .post-card:hover { border-color: rgba(255,255,255,0.15); transform: translateX(3px); }
+  .post-card-accent {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px;
+  }
+  .post-card-top {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    margin-bottom: 8px;
+  }
+  .post-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .type-chip {
+    padding: 2px 10px; border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+  }
+  .sub-chip {
+    padding: 2px 8px; border-radius: 5px; font-size: 0.68rem;
+    background: rgba(255,255,255,0.07); color: var(--text-muted);
+  }
+  .post-card h3 { font-size: 0.95rem; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
+  .post-card-body { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .post-card-footer {
+    margin-top: 12px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.75rem; color: var(--text-muted);
+  }
+  .post-card-footer .actions { display: flex; gap: 8px; }
+  .has-image { display: inline-flex; align-items: center; gap: 4px; }
+  .has-image::before { content: '🖼'; font-size: 0.75rem; }
+  .comment-count::before { content: '💬 '; }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 40px 16px; overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 18px; width: 100%; max-width: 700px;
+    animation: modalIn .22s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-header {
+    padding: 24px 28px 0;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .modal-header h2 { font-size: 1.1rem; font-weight: 700; line-height: 1.4; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted); font-size: 1.4rem;
+    cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 20px 28px; }
+  .modal-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .modal-text { font-size: 0.88rem; line-height: 1.8; color: var(--text-muted); white-space: pre-wrap; }
+  .modal-image { margin-top: 16px; }
+  .modal-image img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* ---- COMMENTS ---- */
+  .comments-section h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 14px; color: var(--text-muted); }
+  .comment-item {
+    display: flex; gap: 10px; margin-bottom: 14px;
+  }
+  .comment-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700;
+  }
+  .comment-bubble {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 14px; flex: 1;
+  }
+  .comment-author { font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; }
+  .comment-text { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; }
+  .comment-date { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+  .comment-input-area { display: flex; gap: 8px; margin-top: 12px; }
+  .comment-input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 14px; border-radius: 10px; font-size: 0.82rem; resize: none;
+    font-family: 'Noto Sans KR', sans-serif; min-height: 42px;
+  }
+  .comment-input:focus { outline: none; border-color: var(--accent-blue); }
+  .comment-input::placeholder { color: var(--text-muted); }
+
+  /* ---- UPLOAD MODAL ---- */
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 14px; border-radius: 10px; font-size: 0.85rem;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent-blue); }
+  .form-textarea { min-height: 120px; resize: vertical; }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--text-muted); }
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 32px; text-align: center; cursor: pointer; transition: all .18s;
+    color: var(--text-muted); font-size: 0.85rem;
+  }
+  .upload-area:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+  .upload-area-icon { font-size: 2rem; margin-bottom: 8px; }
+  .preview-img { max-width: 100%; max-height: 180px; border-radius: 8px; margin-top: 12px; }
+
+  /* ---- EMPTY STATE ---- */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* ---- LOGIN SCREEN ---- */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 420px;
+    text-align: center;
+  }
+  .login-logo {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .login-sub { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 28px; }
+  .login-field-group { text-align: left; margin-bottom: 14px; }
+  .login-field-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; }
+  .login-field-input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 11px 14px; border-radius: 10px; font-size: 0.88rem;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .login-field-input:focus { outline: none; border-color: var(--accent-blue); }
+  .login-field-input::placeholder { color: var(--text-muted); }
+  .login-submit-btn {
+    width: 100%; padding: 13px; border-radius: 12px; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; border: none; font-family: 'Noto Sans KR', sans-serif;
+    transition: all .18s; margin-top: 8px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+    color: #fff;
+  }
+  .login-submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .login-error {
+    color: var(--accent-rose); font-size: 0.8rem; margin-top: 10px;
+    display: none; text-align: center;
+  }
+  .login-error.show { display: block; }
+  .login-hint { margin-top: 16px; font-size: 0.75rem; color: var(--text-muted); }
+
+  /* ---- ACCOUNT MANAGEMENT MODAL ---- */
+  .accounts-table {
+    width: 100%; border-collapse: collapse; margin-top: 12px;
+    font-size: 0.82rem;
+  }
+  .accounts-table th {
+    text-align: left; padding: 8px 12px;
+    color: var(--text-muted); font-weight: 600; font-size: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .accounts-table td {
+    padding: 10px 12px; border-bottom: 1px solid rgba(30,45,69,0.5);
+    vertical-align: middle;
+  }
+  .accounts-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .account-role-badge {
+    padding: 2px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+  }
+  .account-role-badge.admin { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+  .account-role-badge.student { background: rgba(59,130,246,0.12); color: var(--accent-blue); }
+  .inline-edit-row { background: var(--surface) !important; }
+  .inline-input {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 5px 10px; border-radius: 7px; font-size: 0.82rem;
+    font-family: 'Noto Sans KR', sans-serif; width: 100%;
+  }
+  .inline-input:focus { outline: none; border-color: var(--accent-blue); }
+  .section-divider-label {
+    font-size: 0.75rem; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 12px 0 6px; border-top: 1px solid var(--border); margin-top: 8px;
+  }
+
+  /* colors per type */
+  .color-인문계 { color: var(--인문계); }
+  .color-특성화고 { color: var(--특성화고); }
+  .color-마이스터고 { color: var(--마이스터고); }
+  .color-특목고 { color: var(--특목고); }
+  .color-자사고 { color: var(--자사고); }
+  .bg-인문계 { background: var(--인문계); }
+  .bg-특성화고 { background: var(--특성화고); }
+  .bg-마이스터고 { background: var(--마이스터고); }
+  .bg-특목고 { background: var(--특목고); }
+  .bg-자사고 { background: var(--자사고); }
+  .chip-인문계 { background: rgba(59,130,246,.15); color: var(--인문계); }
+  .chip-특성화고 { background: rgba(16,185,129,.15); color: var(--특성화고); }
+  .chip-마이스터고 { background: rgba(245,158,11,.15); color: var(--마이스터고); }
+  .chip-특목고 { background: rgba(139,92,246,.15); color: var(--특목고); }
+  .chip-자사고 { background: rgba(244,63,94,.15); color: var(--자사고); }
+
+  .toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 500;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 12px 20px; border-radius: 10px; font-size: 0.85rem;
+    animation: toastIn .2s ease;
+    display: none;
+  }
+  .toast.show { display: block; }
+  @keyframes toastIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  .admin-actions { display: flex; gap: 6px; }
+
+  @media (max-width: 600px) {
+    .topbar { padding: 0 16px; }
+    .hero { padding: 40px 16px 28px; }
+    .tabs-section, .school-info-section, .content-section { padding-left: 16px; padding-right: 16px; }
+    .modal-overlay { padding: 20px 8px; }
+    .modal-header, .modal-body { padding-left: 18px; padding-right: 18px; }
+  }
+
+  .section-divider {
+    display: flex; align-items: center; gap: 14px;
+    margin: 28px 0 20px; color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .pw-toggle {
+    position: relative;
+  }
+  .pw-toggle .form-input { padding-right: 40px; }
+  .pw-eye {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    font-size: 1rem; padding: 0;
+  }
+  .pw-eye:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ======== LOGIN SCREEN ======== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">ADMISSION HUB</div>
+    <div class="login-sub">고등학교 입시 정보 플랫폼</div>
+
+    <div class="login-field-group">
+      <label class="login-field-label">아이디</label>
+      <input class="login-field-input" type="text" id="login-id" placeholder="아이디를 입력하세요" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-field-group">
+      <label class="login-field-label">비밀번호</label>
+      <div class="pw-toggle">
+        <input class="login-field-input form-input" type="password" id="login-pw" placeholder="비밀번호를 입력하세요" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:40px">
+        <button class="pw-eye" onclick="togglePw('login-pw', this)">👁</button>
+      </div>
+    </div>
+    <div class="login-error" id="login-error">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+    <button class="login-submit-btn" onclick="doLogin()">로그인</button>
+    <div class="login-hint">※ 계정이 없으시면 관리자에게 문의하세요</div>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<nav class="topbar">
+  <div class="topbar-logo">ADMISSION HUB</div>
+  <div class="topbar-right">
+    <span id="topbar-username" style="font-size:0.82rem;color:var(--text-muted)"></span>
+    <span class="role-badge" id="role-display"></span>
+    <button class="btn btn-ghost btn-sm" onclick="openMyAccount()" id="my-account-btn" style="display:none">내 계정</button>
+    <button class="btn btn-ghost btn-sm" id="manage-accounts-btn" onclick="openAccountsMgr()" style="display:none">👥 계정 관리</button>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>고등학교 입시<br><span>정보 플랫폼</span></h1>
+  <p>다양한 고등학교 유형별 최신 입시 자료를 한 곳에서 확인하세요.</p>
+</div>
+
+<!-- TABS -->
+<div class="tabs-section">
+  <div class="tabs" id="main-tabs">
+    <button class="tab-btn active" data-type="전체" onclick="filterByType('전체', this)">전체</button>
+    <button class="tab-btn" data-type="인문계" onclick="filterByType('인문계', this)">🏫 인문계</button>
+    <button class="tab-btn" data-type="특성화고" onclick="filterByType('특성화고', this)">🔧 특성화고</button>
+    <button class="tab-btn" data-type="마이스터고" onclick="filterByType('마이스터고', this)">⚙️ 마이스터고</button>
+    <button class="tab-btn" data-type="특목고" onclick="filterByType('특목고', this)">🔬 특목고</button>
+    <button class="tab-btn" data-type="자사고/자공고" onclick="filterByType('자사고/자공고', this)">🎓 자사고/자공고</button>
+  </div>
+</div>
+
+<!-- SCHOOL INFO CARDS -->
+<div class="school-info-section" id="school-info-section">
+  <div class="school-info-grid" id="school-info-grid"></div>
+</div>
+
+<!-- CONTENT -->
+<div class="content-section">
+  <div class="section-header">
+    <div class="section-title">📋 최신 입시 자료</div>
+    <button class="btn btn-primary btn-sm" id="upload-btn" onclick="openUpload()" style="display:none">+ 자료 업로드</button>
+  </div>
+  <div class="filter-bar">
+    <input class="search-input" type="text" placeholder="자료 검색..." oninput="filterPosts()" id="search-input">
+    <select class="filter-select" onchange="filterPosts()" id="sub-filter" style="display:none">
+      <option value="">전체 세부 유형</option>
+    </select>
+  </div>
+  <div class="posts-list" id="posts-list"></div>
+</div>
+
+<!-- ======== ACCOUNT MANAGEMENT MODAL ======== -->
+<div class="modal-overlay" id="accounts-modal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h2>👥 계정 관리</h2>
+      <button class="modal-close" onclick="closeAccountsMgr()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Admin account section -->
+      <div class="section-divider-label" style="border-top:none;padding-top:0;margin-top:0">관리자 계정</div>
+      <table class="accounts-table">
+        <thead>
+          <tr>
+            <th>구분</th><th>아이디</th><th>비밀번호</th><th>이름</th><th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="admin-accounts-tbody"></tbody>
+      </table>
+
+      <div class="section-divider-label">학생 계정 <span id="student-count-label" style="font-weight:400;color:var(--text-muted);font-size:0.7rem"></span></div>
+      <table class="accounts-table">
+        <thead>
+          <tr>
+            <th>구분</th><th>아이디</th><th>비밀번호</th><th>이름</th><th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="student-accounts-tbody"></tbody>
+      </table>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:0.85rem;font-weight:700;margin-bottom:12px;color:var(--text)">➕ 새 학생 계정 추가</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end">
+          <div>
+            <div class="form-label">아이디</div>
+            <input class="form-input" type="text" id="new-student-id" placeholder="아이디">
+          </div>
+          <div>
+            <div class="form-label">비밀번호</div>
+            <input class="form-input" type="text" id="new-student-pw" placeholder="비밀번호">
+          </div>
+          <div>
+            <div class="form-label">이름 (닉네임)</div>
+            <input class="form-input" type="text" id="new-student-name" placeholder="이름">
+          </div>
+          <button class="btn btn-success" onclick="addStudentAccount()" style="white-space:nowrap">추가</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== MY ACCOUNT MODAL ======== -->
+<div class="modal-overlay" id="my-account-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h2>👤 내 계정 설정</h2>
+      <button class="modal-close" onclick="closeMyAccount()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:20px">
+        현재 로그인: <strong style="color:var(--text)" id="my-account-info"></strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label">새 아이디</label>
+        <input class="form-input" type="text" id="my-new-id" placeholder="변경할 아이디 입력">
+      </div>
+      <div class="form-group">
+        <label class="form-label">현재 비밀번호</label>
+        <div class="pw-toggle">
+          <input class="form-input" type="password" id="my-cur-pw" placeholder="현재 비밀번호" style="padding-right:40px">
+          <button class="pw-eye" onclick="togglePw('my-cur-pw', this)">👁</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">새 비밀번호</label>
+        <div class="pw-toggle">
+          <input class="form-input" type="password" id="my-new-pw" placeholder="변경할 비밀번호 입력" style="padding-right:40px">
+          <button class="pw-eye" onclick="togglePw('my-new-pw', this)">👁</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">새 비밀번호 확인</label>
+        <div class="pw-toggle">
+          <input class="form-input" type="password" id="my-new-pw2" placeholder="새 비밀번호 재입력" style="padding-right:40px">
+          <button class="pw-eye" onclick="togglePw('my-new-pw2', this)">👁</button>
+        </div>
+      </div>
+      <div style="font-size:0.76rem;color:var(--text-muted);margin-bottom:16px">
+        ※ 변경하지 않을 항목은 비워두세요.
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeMyAccount()">취소</button>
+        <button class="btn btn-amber" onclick="saveMyAccount()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="modal-overlay" id="upload-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📤 자료 업로드</h2>
+      <button class="modal-close" onclick="closeUpload()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">고등학교 유형</label>
+        <select class="form-select" id="f-type" onchange="updateSubSelect()">
+          <option value="인문계">인문계</option>
+          <option value="특성화고">특성화고</option>
+          <option value="마이스터고">마이스터고</option>
+          <option value="특목고">특목고</option>
+          <option value="자사고/자공고">자사고/자공고</option>
+        </select>
+      </div>
+      <div class="form-group" id="sub-select-group">
+        <label class="form-label">세부 분류</label>
+        <select class="form-select" id="f-sub"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">제목</label>
+        <input class="form-input" type="text" id="f-title" placeholder="자료 제목을 입력하세요">
+      </div>
+      <div class="form-group">
+        <label class="form-label">내용</label>
+        <textarea class="form-textarea" id="f-content" placeholder="자료 내용을 입력하세요..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">이미지 첨부 (선택)</label>
+        <div class="upload-area" onclick="document.getElementById('f-image').click()">
+          <div class="upload-area-icon">📷</div>
+          <div>클릭하여 이미지 선택</div>
+          <div style="font-size:0.75rem;margin-top:4px">JPG, PNG, GIF 지원</div>
+        </div>
+        <input type="file" id="f-image" accept="image/*" style="display:none" onchange="previewImage()">
+        <img id="f-preview" class="preview-img" style="display:none">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeUpload()">취소</button>
+        <button class="btn btn-success" onclick="submitPost()">업로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>✏️ 자료 수정</h2>
+      <button class="modal-close" onclick="closeEdit()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="e-id">
+      <div class="form-group">
+        <label class="form-label">고등학교 유형</label>
+        <select class="form-select" id="e-type" onchange="updateEditSubSelect()">
+          <option value="인문계">인문계</option>
+          <option value="특성화고">특성화고</option>
+          <option value="마이스터고">마이스터고</option>
+          <option value="특목고">특목고</option>
+          <option value="자사고/자공고">자사고/자공고</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">세부 분류</label>
+        <select class="form-select" id="e-sub"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">제목</label>
+        <input class="form-input" type="text" id="e-title">
+      </div>
+      <div class="form-group">
+        <label class="form-label">내용</label>
+        <textarea class="form-textarea" id="e-content"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeEdit()">취소</button>
+        <button class="btn btn-amber" onclick="saveEdit()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POST DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <h2 id="d-title"></h2>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-meta" id="d-meta"></div>
+      <div class="modal-text" id="d-content"></div>
+      <div class="modal-image" id="d-image"></div>
+      <div class="divider"></div>
+      <div class="comments-section">
+        <h4 id="d-comment-header">💬 댓글</h4>
+        <div id="d-comments"></div>
+        <div class="comment-input-area">
+          <textarea class="comment-input" id="new-comment" placeholder="댓글을 입력하세요..." rows="2"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="submitComment()" style="align-self:flex-end;white-space:nowrap">등록</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ SCHOOL TYPES DATA ============
+const SCHOOL_TYPES = {
+  "인문계": {
+    color: "#3b82f6", emoji: "🏫",
+    desc: "대학 진학을 목표로 국어·영어·수학 등 교과 중심의 일반적인 교육과정을 운영하는 고등학교입니다.",
+    subs: ["전체"]
+  },
+  "특성화고": {
+    color: "#10b981", emoji: "🔧",
+    desc: "직업 교육에 특화된 고등학교로, 졸업 후 바로 취업을 목표로 전문 기술과 실무 교육을 제공합니다.",
+    subs: ["전체", "기술", "요식업", "예체능", "미용", "보건", "경제"]
+  },
+  "마이스터고": {
+    color: "#f59e0b", emoji: "⚙️",
+    desc: "산업계의 수요에 맞는 최고의 기술 인재를 양성하는 특수목적 직업 고등학교입니다.",
+    subs: ["전체"]
+  },
+  "특목고": {
+    color: "#8b5cf6", emoji: "🔬",
+    desc: "특수 분야의 인재 양성을 목적으로 설립된 고등학교입니다.",
+    subs: ["전체", "예체능", "외고", "국제고", "과고"]
+  },
+  "자사고/자공고": {
+    color: "#f43f5e", emoji: "🎓",
+    desc: "자율형 사립고등학교(자사고)와 자율형 공립고등학교(자공고)로 다양한 교육 프로그램을 운영합니다.",
+    subs: ["전체"]
+  }
+};
+
+// ============ ACCOUNT DATA ============
+// accounts: { id, pw, role: 'admin'|'student', name }
+let accounts = [
+  { id: '성완T', pw: '1234', role: 'admin', name: '성완T' }
+];
+
+let currentUser = null; // { id, pw, role, name }
+
+// ============ AUTH ============
+function doLogin() {
+  const inputId = document.getElementById('login-id').value.trim();
+  const inputPw = document.getElementById('login-pw').value;
+  const errEl = document.getElementById('login-error');
+
+  const found = accounts.find(a => a.id === inputId && a.pw === inputPw);
+  if (!found) {
+    errEl.classList.add('show');
+    document.getElementById('login-pw').value = '';
+    return;
+  }
+  errEl.classList.remove('show');
+  currentUser = found;
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('role-display').textContent = found.role === 'admin' ? '관리자' : '학생';
+  document.getElementById('role-display').className = 'role-badge ' + found.role;
+  document.getElementById('topbar-username').textContent = found.name;
+  document.getElementById('upload-btn').style.display = found.role === 'admin' ? 'block' : 'none';
+  document.getElementById('manage-accounts-btn').style.display = found.role === 'admin' ? 'block' : 'none';
+  document.getElementById('my-account-btn').style.display = 'block';
+
+  renderSchoolInfo();
+  renderPosts();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('login-id').value = '';
+  document.getElementById('login-pw').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function togglePw(inputId, btn) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+// ============ ACCOUNT MANAGEMENT ============
+function openAccountsMgr() {
+  renderAccountsTable();
+  document.getElementById('new-student-id').value = '';
+  document.getElementById('new-student-pw').value = '';
+  document.getElementById('new-student-name').value = '';
+  document.getElementById('accounts-modal').classList.add('open');
+}
+function closeAccountsMgr() {
+  document.getElementById('accounts-modal').classList.remove('open');
+}
+
+function renderAccountsTable() {
+  const admins = accounts.filter(a => a.role === 'admin');
+  const students = accounts.filter(a => a.role === 'student');
+
+  document.getElementById('student-count-label').textContent = `(${students.length}명)`;
+
+  document.getElementById('admin-accounts-tbody').innerHTML = admins.map(a => buildAccountRow(a)).join('');
+  document.getElementById('student-accounts-tbody').innerHTML = students.length
+    ? students.map(a => buildAccountRow(a)).join('')
+    : `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;font-size:0.82rem">등록된 학생 계정이 없습니다.</td></tr>`;
+}
+
+function buildAccountRow(a) {
+  return `
+    <tr id="row-${a.id}">
+      <td><span class="account-role-badge ${a.role}">${a.role === 'admin' ? '관리자' : '학생'}</span></td>
+      <td style="font-family:monospace;font-size:0.85rem">${a.id}</td>
+      <td style="font-family:monospace;font-size:0.85rem;color:var(--text-muted)">••••••</td>
+      <td>${a.name}</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-ghost btn-sm" onclick="startEditAccount('${a.id}')">수정</button>
+          ${a.role === 'student' ? `<button class="btn btn-danger btn-sm" onclick="deleteAccount('${a.id}')">삭제</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+}
+
+function startEditAccount(accountId) {
+  const a = accounts.find(x => x.id === accountId);
+  if (!a) return;
+  const tbody = a.role === 'admin' ? 'admin-accounts-tbody' : 'student-accounts-tbody';
+  // Replace row with inline edit
+  document.getElementById(`row-${accountId}`).outerHTML = `
+    <tr class="inline-edit-row" id="editrow-${accountId}">
+      <td><span class="account-role-badge ${a.role}">${a.role === 'admin' ? '관리자' : '학생'}</span></td>
+      <td><input class="inline-input" id="ei-id-${accountId}" type="text" value="${a.id}" placeholder="아이디"></td>
+      <td><input class="inline-input" id="ei-pw-${accountId}" type="text" value="${a.pw}" placeholder="비밀번호"></td>
+      <td><input class="inline-input" id="ei-name-${accountId}" type="text" value="${a.name}" placeholder="이름"></td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-success btn-sm" onclick="saveAccountEdit('${accountId}')">저장</button>
+          <button class="btn btn-ghost btn-sm" onclick="renderAccountsTable()">취소</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function saveAccountEdit(oldId) {
+  const newId   = document.getElementById(`ei-id-${oldId}`).value.trim();
+  const newPw   = document.getElementById(`ei-pw-${oldId}`).value.trim();
+  const newName = document.getElementById(`ei-name-${oldId}`).value.trim();
+
+  if (!newId || !newPw || !newName) { showToast('모든 항목을 입력해주세요.'); return; }
+
+  // Check duplicate id (ignore same account)
+  const duplicate = accounts.find(a => a.id === newId && a.id !== oldId);
+  if (duplicate) { showToast('이미 사용 중인 아이디입니다.'); return; }
+
+  const acc = accounts.find(a => a.id === oldId);
+  acc.id   = newId;
+  acc.pw   = newPw;
+  acc.name = newName;
+
+  // If currently logged-in user changed their own info, update session
+  if (currentUser && currentUser.id === oldId) {
+    currentUser = acc;
+    document.getElementById('topbar-username').textContent = acc.name;
+  }
+
+  renderAccountsTable();
+  showToast('계정이 수정되었습니다.');
+}
+
+function deleteAccount(accountId) {
+  const a = accounts.find(x => x.id === accountId);
+  if (!a || a.role === 'admin') return;
+  if (!confirm(`'${a.name}' 학생 계정을 삭제하시겠습니까?`)) return;
+  accounts = accounts.filter(x => x.id !== accountId);
+  renderAccountsTable();
+  showToast('계정이 삭제되었습니다.');
+}
+
+function addStudentAccount() {
+  const id   = document.getElementById('new-student-id').value.trim();
+  const pw   = document.getElementById('new-student-pw').value.trim();
+  const name = document.getElementById('new-student-name').value.trim();
+  if (!id || !pw || !name) { showToast('아이디, 비밀번호, 이름을 모두 입력해주세요.'); return; }
+  if (accounts.find(a => a.id === id)) { showToast('이미 사용 중인 아이디입니다.'); return; }
+
+  accounts.push({ id, pw, role: 'student', name });
+  document.getElementById('new-student-id').value = '';
+  document.getElementById('new-student-pw').value = '';
+  document.getElementById('new-student-name').value = '';
+  renderAccountsTable();
+  showToast(`'${name}' 학생 계정이 생성되었습니다!`);
+}
+
+// ============ MY ACCOUNT ============
+function openMyAccount() {
+  document.getElementById('my-account-info').textContent = `${currentUser.name} (${currentUser.role === 'admin' ? '관리자' : '학생'})`;
+  document.getElementById('my-new-id').value = '';
+  document.getElementById('my-cur-pw').value = '';
+  document.getElementById('my-new-pw').value = '';
+  document.getElementById('my-new-pw2').value = '';
+  document.getElementById('my-account-modal').classList.add('open');
+}
+function closeMyAccount() {
+  document.getElementById('my-account-modal').classList.remove('open');
+}
+
+function saveMyAccount() {
+  const newId  = document.getElementById('my-new-id').value.trim();
+  const curPw  = document.getElementById('my-cur-pw').value;
+  const newPw  = document.getElementById('my-new-pw').value;
+  const newPw2 = document.getElementById('my-new-pw2').value;
+
+  // At least one field must be filled
+  if (!newId && !newPw) { showToast('변경할 항목을 입력해주세요.'); return; }
+
+  // If changing password, current password is required
+  if (newPw || curPw) {
+    if (!curPw) { showToast('현재 비밀번호를 입력해주세요.'); return; }
+    if (curPw !== currentUser.pw) { showToast('현재 비밀번호가 올바르지 않습니다.'); return; }
+    if (!newPw) { showToast('새 비밀번호를 입력해주세요.'); return; }
+    if (newPw !== newPw2) { showToast('새 비밀번호가 일치하지 않습니다.'); return; }
+  }
+
+  const acc = accounts.find(a => a.id === currentUser.id);
+
+  if (newId && newId !== currentUser.id) {
+    if (accounts.find(a => a.id === newId)) { showToast('이미 사용 중인 아이디입니다.'); return; }
+    acc.id = newId;
+    currentUser.id = newId;
+  }
+
+  if (newPw) {
+    acc.pw = newPw;
+    currentUser.pw = newPw;
+  }
+
+  closeMyAccount();
+  showToast('계정 정보가 변경되었습니다.');
+}
+
+// ============ SCHOOL INFO CARDS ============
+function renderSchoolInfo() {
+  const grid = document.getElementById('school-info-grid');
+  const types = currentType === "전체"
+    ? Object.keys(SCHOOL_TYPES)
+    : (SCHOOL_TYPES[currentType] ? [currentType] : []);
+
+  grid.innerHTML = types.map(t => {
+    const info = SCHOOL_TYPES[t];
+    const subs = info.subs.filter(s => s !== "전체");
+    const typeKey = t.replace('/자공고', '');
+    return `
+      <div class="school-info-card" data-type="${t}">
+        <div class="sic-badge chip-${typeKey}">${info.emoji} ${t}</div>
+        <h3>${t === "자사고/자공고" ? "자사고 & 자공고" : t}</h3>
+        <p>${info.desc}</p>
+        ${subs.length ? `<div class="sub-categories">${subs.map(s => `<span class="sub-cat">${s}</span>`).join('')}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ============ POSTS DATA ============
+let posts = [
+  { id: 1, type: "인문계", sub: "", title: "2025 수능 등급컷 최종 분석", content: "2025학년도 대학수학능력시험 등급컷이 확정되었습니다.\n\n■ 국어 영역\n1등급: 92점 이상\n2등급: 84점 이상\n\n■ 수학 영역 (공통+선택)\n1등급: 89점 이상\n2등급: 81점 이상\n\n■ 영어 영역\n1등급 비율: 전체 응시자의 약 4.7%", date: "2025-11-30", comments: [], hasImage: false, imageData: null },
+  { id: 2, type: "특성화고", sub: "요식업", title: "조리특성화고 입학 가이드 2025", content: "조리특성화고등학교 입학을 위한 준비사항 및 전형 일정을 안내합니다.\n\n◆ 주요 전형\n- 일반전형: 중학교 내신 성적 반영\n- 특별전형: 관련 실기 평가 포함\n\n◆ 전형 일정\n- 원서 접수: 12월 초\n- 실기 고사: 12월 중순\n- 최종 발표: 12월 말", date: "2025-11-28", comments: [], hasImage: false, imageData: null },
+  { id: 3, type: "특목고", sub: "과고", title: "과학고 입시 준비 로드맵", content: "과학고등학교 합격을 위한 단계별 준비 방법을 안내합니다.\n\n▶ 1단계 (중1~중2): 기초 실력 다지기\n- 수학·과학 경시대회 준비\n- R&E 프로그램 참여\n\n▶ 2단계 (중2~중3): 서류 완성\n- 자기소개서 초안 작성\n\n▶ 3단계: 면접 준비\n- 수학·과학 심층 면접 대비", date: "2025-11-25", comments: [{ author: "김학생", text: "면접 기출 문제도 올려주실 수 있나요?", date: "2025-11-26" }], hasImage: false, imageData: null },
+  { id: 4, type: "마이스터고", sub: "", title: "2026 마이스터고 모집 공고 종합", content: "2026학년도 전국 마이스터고등학교 신입생 모집 일정 종합 안내입니다.\n\n■ 지원 자격\n- 중학교 졸업(예정)자\n\n■ 전형 방법\n- 1단계: 서류 평가 (학생부, 자기소개서)\n- 2단계: 면접 및 실기\n\n■ 취업 연계\n주요 대기업 및 공공기관과 협약을 맺고 있어 졸업 후 바로 취업 연계가 가능합니다.", date: "2025-11-20", comments: [], hasImage: false, imageData: null },
+  { id: 5, type: "자사고/자공고", sub: "", title: "자사고 폐지 논란과 현재 현황", content: "자율형 사립고등학교 존폐 논란과 현재 운영 현황에 대해 정리합니다.\n\n◆ 현황\n현재 전국 다수의 자사고가 재지정 심사를 통해 운영 중입니다.\n\n◆ 입시 특징\n- 독자적인 교육과정 운영\n- 다양한 방과후 프로그램\n- 대입 실적 우수", date: "2025-11-15", comments: [], hasImage: false, imageData: null },
+  { id: 6, type: "특성화고", sub: "기술", title: "전자/IT 특성화고 취업률 분석", content: "전자·IT 계열 특성화고 졸업생의 취업 현황 및 주요 취업처를 분석합니다.\n\n■ 취업률 현황\n전자 계열 특성화고 평균 취업률: 72%\nIT 계열 특성화고 평균 취업률: 68%\n\n■ 주요 취업처\n- 삼성전자, LG전자 협력사\n- IT 스타트업\n- 공공기관 기술직", date: "2025-11-10", comments: [], hasImage: false, imageData: null },
+];
+let nextId = 7;
+let currentType = "전체";
+let currentPostId = null;
+
+// ============ TABS ============
+function filterByType(type, btn) {
+  currentType = type;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const subFilter = document.getElementById('sub-filter');
+  if (type !== "전체" && SCHOOL_TYPES[type] && SCHOOL_TYPES[type].subs.length > 1) {
+    subFilter.style.display = 'block';
+    subFilter.innerHTML = SCHOOL_TYPES[type].subs.map(s => `<option value="${s === "전체" ? "" : s}">${s}</option>`).join('');
+  } else {
+    subFilter.style.display = 'none';
+  }
+  renderSchoolInfo();
+  renderPosts();
+}
+
+// ============ POSTS ============
+function getFilteredPosts() {
+  let filtered = [...posts].sort((a, b) => b.id - a.id);
+  if (currentType !== "전체") filtered = filtered.filter(p => p.type === currentType);
+  const sub = document.getElementById('sub-filter').value;
+  if (sub) filtered = filtered.filter(p => p.sub === sub);
+  const q = document.getElementById('search-input').value.toLowerCase();
+  if (q) filtered = filtered.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q));
+  return filtered;
+}
+
+function filterPosts() { renderPosts(); }
+
+function renderPosts() {
+  const list = document.getElementById('posts-list');
+  const filtered = getFilteredPosts();
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📂</div><p>등록된 자료가 없습니다.</p></div>`;
+    return;
+  }
+  const typeKey = t => t.replace('/자공고', '');
+  list.innerHTML = filtered.map(p => `
+    <div class="post-card" onclick="openDetail(${p.id})">
+      <div class="post-card-accent bg-${typeKey(p.type)}"></div>
+      <div class="post-card-top">
+        <div class="post-card-meta">
+          <span class="type-chip chip-${typeKey(p.type)}">${p.type}</span>
+          ${p.sub ? `<span class="sub-chip">${p.sub}</span>` : ''}
+        </div>
+        ${currentUser && currentUser.role === 'admin' ? `
+        <div class="admin-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-sm" onclick="openEdit(${p.id})">수정</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePost(${p.id})">삭제</button>
+        </div>` : ''}
+      </div>
+      <h3>${p.title}</h3>
+      <div class="post-card-body">${p.content}</div>
+      <div class="post-card-footer">
+        <span>${p.date}</span>
+        <div class="actions">
+          ${p.hasImage ? '<span class="has-image">이미지 첨부</span>' : ''}
+          <span class="comment-count">${p.comments.length}개</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============ DETAIL MODAL ============
+function openDetail(id) {
+  const p = posts.find(x => x.id === id);
+  if (!p) return;
+  currentPostId = id;
+  const typeKey = p.type.replace('/자공고', '');
+
+  document.getElementById('d-title').textContent = p.title;
+  document.getElementById('d-meta').innerHTML = `
+    <span class="type-chip chip-${typeKey}">${p.type}</span>
+    ${p.sub ? `<span class="sub-chip">${p.sub}</span>` : ''}
+    <span style="font-size:.75rem;color:var(--text-muted);margin-left:4px">${p.date}</span>
+  `;
+  document.getElementById('d-content').textContent = p.content;
+  const imgEl = document.getElementById('d-image');
+  imgEl.innerHTML = p.hasImage && p.imageData ? `<img src="${p.imageData}" alt="첨부 이미지">` : '';
+  renderComments(id);
+  document.getElementById('new-comment').value = '';
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function renderComments(id) {
+  const p = posts.find(x => x.id === id);
+  const container = document.getElementById('d-comments');
+  document.getElementById('d-comment-header').textContent = `💬 댓글 (${p.comments.length})`;
+  if (!p.comments.length) {
+    container.innerHTML = `<div style="font-size:.82rem;color:var(--text-muted);padding:12px 0">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</div>`;
+    return;
+  }
+  const colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#f43f5e','#06b6d4'];
+  container.innerHTML = p.comments.map((c,i) => `
+    <div class="comment-item">
+      <div class="comment-avatar" style="background:${colors[i%colors.length]}22;color:${colors[i%colors.length]}">${c.author[0]}</div>
+      <div class="comment-bubble">
+        <div class="comment-author">${c.author}</div>
+        <div class="comment-text">${c.text}</div>
+        <div class="comment-date">${c.date}</div>
+        ${currentUser && currentUser.role === 'admin' ? `<button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="deleteComment(${id}, ${i})">삭제</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function submitComment() {
+  const text = document.getElementById('new-comment').value.trim();
+  if (!text) return;
+  const p = posts.find(x => x.id === currentPostId);
+  const today = new Date().toISOString().split('T')[0];
+  p.comments.push({ author: currentUser.name, text, date: today });
+  document.getElementById('new-comment').value = '';
+  renderComments(currentPostId);
+  renderPosts();
+  showToast('댓글이 등록되었습니다.');
+}
+
+function deleteComment(postId, idx) {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  posts.find(x => x.id === postId).comments.splice(idx, 1);
+  renderComments(postId);
+  renderPosts();
+  showToast('댓글이 삭제되었습니다.');
+}
+
+function closeDetail() {
+  document.getElementById('detail-modal').classList.remove('open');
+  currentPostId = null;
+}
+
+// ============ UPLOAD ============
+const SUB_MAP = {
+  "인문계": [], "특성화고": ["기술","요식업","예체능","미용","보건","경제"],
+  "마이스터고": [], "특목고": ["예체능","외고","국제고","과고"], "자사고/자공고": []
+};
+
+function updateSubSelect() {
+  const type = document.getElementById('f-type').value;
+  const subs = SUB_MAP[type] || [];
+  const group = document.getElementById('sub-select-group');
+  const sel = document.getElementById('f-sub');
+  if (subs.length) {
+    group.style.display = 'block';
+    sel.innerHTML = `<option value="">-- 선택 --</option>` + subs.map(s => `<option>${s}</option>`).join('');
+  } else {
+    group.style.display = 'none'; sel.innerHTML = '';
+  }
+}
+
+function updateEditSubSelect() {
+  const type = document.getElementById('e-type').value;
+  const subs = SUB_MAP[type] || [];
+  const sel = document.getElementById('e-sub');
+  sel.innerHTML = `<option value="">-- 해당 없음 --</option>` + subs.map(s => `<option>${s}</option>`).join('');
+}
+
+function openUpload() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  updateSubSelect();
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-content').value = '';
+  document.getElementById('f-preview').style.display = 'none';
+  document.getElementById('f-image').value = '';
+  document.getElementById('upload-modal').classList.add('open');
+}
+function closeUpload() { document.getElementById('upload-modal').classList.remove('open'); }
+
+function previewImage() {
+  const file = document.getElementById('f-image').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('f-preview');
+    img.src = e.target.result; img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitPost() {
+  const title = document.getElementById('f-title').value.trim();
+  const content = document.getElementById('f-content').value.trim();
+  const type = document.getElementById('f-type').value;
+  const sub = document.getElementById('f-sub').value || '';
+  if (!title || !content) { showToast('제목과 내용을 입력해주세요.'); return; }
+  const preview = document.getElementById('f-preview');
+  const hasImage = preview.style.display !== 'none' && preview.src;
+  const today = new Date().toISOString().split('T')[0];
+  posts.unshift({ id: nextId++, type, sub, title, content, date: today, comments: [], hasImage: !!hasImage, imageData: hasImage ? preview.src : null });
+  closeUpload(); renderPosts(); showToast('자료가 업로드되었습니다!');
+}
+
+// ============ EDIT ============
+function openEdit(id) {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  const p = posts.find(x => x.id === id);
+  document.getElementById('e-id').value = id;
+  document.getElementById('e-type').value = p.type;
+  updateEditSubSelect();
+  setTimeout(() => { document.getElementById('e-sub').value = p.sub || ''; }, 10);
+  document.getElementById('e-title').value = p.title;
+  document.getElementById('e-content').value = p.content;
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); }
+function saveEdit() {
+  const id = +document.getElementById('e-id').value;
+  const p = posts.find(x => x.id === id);
+  p.type = document.getElementById('e-type').value;
+  p.sub = document.getElementById('e-sub').value || '';
+  p.title = document.getElementById('e-title').value.trim();
+  p.content = document.getElementById('e-content').value.trim();
+  if (!p.title || !p.content) { showToast('제목과 내용을 입력해주세요.'); return; }
+  closeEdit(); renderPosts(); showToast('수정이 완료되었습니다.');
+}
+
+// ============ DELETE ============
+function deletePost(id) {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  if (!confirm('이 자료를 삭제하시겠습니까?')) return;
+  posts = posts.filter(p => p.id !== id);
+  renderPosts(); showToast('자료가 삭제되었습니다.');
+}
+
+// ============ TOAST ============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// close modal on overlay click
+['upload-modal','edit-modal','detail-modal','accounts-modal','my-account-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target.id === id) document.getElementById(id).classList.remove('open');
+  });
+});
+
+updateSubSelect();
+</script>
+</body>
+</html>
