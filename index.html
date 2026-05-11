@@ -5,6 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>고등학교 입시 정보 플랫폼</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    databaseURL: "https://project-e79c2-default-rtdb.firebaseio.com"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Firebase 유틸 전역 노출
+  window.__fb = { db, ref, set, get, update, onValue, push, remove };
+  window.__fbReady = true;
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
 <style>
   :root {
     --bg: #0a0e1a;
@@ -109,6 +126,20 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .hero p { color: var(--text-muted); font-size: 1rem; max-width: 500px; margin: 0 auto; }
+
+  /* Firebase 연결 상태 표시 */
+  .fb-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.72rem; color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .fb-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-muted);
+    transition: background .3s;
+  }
+  .fb-dot.connected { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+  .fb-dot.error { background: var(--accent-rose); }
 
   /* ---- SCHOOL TYPE TABS ---- */
   .tabs-section {
@@ -247,7 +278,7 @@
     margin-top: 12px; display: flex; align-items: center; justify-content: space-between;
     font-size: 0.75rem; color: var(--text-muted);
   }
-  .post-card-footer .actions { display: flex; gap: 8px; }
+  .post-card-footer .actions { display: flex; gap: 8px; align-items: center; }
   .has-image { display: inline-flex; align-items: center; gap: 4px; }
   .has-image::before { content: '🖼'; font-size: 0.75rem; }
   .comment-count::before { content: '💬 '; }
@@ -300,9 +331,45 @@
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 12px; padding: 10px 14px; flex: 1;
   }
-  .comment-author { font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; }
+  .comment-top-row {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+  }
+  .comment-author { font-size: 0.78rem; font-weight: 700; }
   .comment-text { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; }
-  .comment-date { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+  .comment-bottom-row {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 8px;
+  }
+  .comment-date { font-size: 0.7rem; color: var(--text-muted); }
+
+  /* ---- LIKE BUTTON ---- */
+  .like-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: none; border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px 10px;
+    font-size: 0.72rem; cursor: pointer; transition: all .18s;
+    color: var(--text-muted); font-family: 'Noto Sans KR', sans-serif;
+    user-select: none;
+  }
+  .like-btn:hover { border-color: #f43f5e55; color: #f43f5e; background: rgba(244,63,94,0.06); }
+  .like-btn.liked {
+    border-color: #f43f5e;
+    color: #f43f5e;
+    background: rgba(244,63,94,0.1);
+  }
+  .like-btn .heart {
+    font-size: 0.85rem;
+    transition: transform .2s cubic-bezier(.36,.07,.19,.97);
+    display: inline-block;
+  }
+  .like-btn.liked .heart { animation: heartPop .3s ease; }
+  @keyframes heartPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.45); }
+    70%  { transform: scale(0.9); }
+    100% { transform: scale(1); }
+  }
+  .like-btn .like-count { font-weight: 600; min-width: 14px; text-align: center; }
+
   .comment-input-area { display: flex; gap: 8px; margin-top: 12px; }
   .comment-input {
     flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text);
@@ -461,9 +528,7 @@
     content: ''; flex: 1; height: 1px; background: var(--border);
   }
 
-  .pw-toggle {
-    position: relative;
-  }
+  .pw-toggle { position: relative; }
   .pw-toggle .form-input { padding-right: 40px; }
   .pw-eye {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
@@ -471,6 +536,15 @@
     font-size: 1rem; padding: 0;
   }
   .pw-eye:hover { color: var(--text); }
+
+  /* 로딩 스피너 */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid var(--border); border-top-color: var(--accent-blue);
+    border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -514,6 +588,10 @@
 <div class="hero">
   <h1>고등학교 입시<br><span>정보 플랫폼</span></h1>
   <p>다양한 고등학교 유형별 최신 입시 자료를 한 곳에서 확인하세요.</p>
+  <div class="fb-status">
+    <span class="fb-dot" id="fb-dot"></span>
+    <span id="fb-status-text">Firebase 연결 중...</span>
+  </div>
 </div>
 
 <!-- TABS -->
@@ -556,42 +634,22 @@
       <button class="modal-close" onclick="closeAccountsMgr()">✕</button>
     </div>
     <div class="modal-body">
-      <!-- Admin account section -->
       <div class="section-divider-label" style="border-top:none;padding-top:0;margin-top:0">관리자 계정</div>
       <table class="accounts-table">
-        <thead>
-          <tr>
-            <th>구분</th><th>아이디</th><th>비밀번호</th><th>이름</th><th>관리</th>
-          </tr>
-        </thead>
+        <thead><tr><th>구분</th><th>아이디</th><th>비밀번호</th><th>이름</th><th>관리</th></tr></thead>
         <tbody id="admin-accounts-tbody"></tbody>
       </table>
-
       <div class="section-divider-label">학생 계정 <span id="student-count-label" style="font-weight:400;color:var(--text-muted);font-size:0.7rem"></span></div>
       <table class="accounts-table">
-        <thead>
-          <tr>
-            <th>구분</th><th>아이디</th><th>비밀번호</th><th>이름</th><th>관리</th>
-          </tr>
-        </thead>
+        <thead><tr><th>구분</th><th>아이디</th><th>비밀번호</th><th>이름</th><th>관리</th></tr></thead>
         <tbody id="student-accounts-tbody"></tbody>
       </table>
-
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
         <div style="font-size:0.85rem;font-weight:700;margin-bottom:12px;color:var(--text)">➕ 새 학생 계정 추가</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end">
-          <div>
-            <div class="form-label">아이디</div>
-            <input class="form-input" type="text" id="new-student-id" placeholder="아이디">
-          </div>
-          <div>
-            <div class="form-label">비밀번호</div>
-            <input class="form-input" type="text" id="new-student-pw" placeholder="비밀번호">
-          </div>
-          <div>
-            <div class="form-label">이름 (닉네임)</div>
-            <input class="form-input" type="text" id="new-student-name" placeholder="이름">
-          </div>
+          <div><div class="form-label">아이디</div><input class="form-input" type="text" id="new-student-id" placeholder="아이디"></div>
+          <div><div class="form-label">비밀번호</div><input class="form-input" type="text" id="new-student-pw" placeholder="비밀번호"></div>
+          <div><div class="form-label">이름 (닉네임)</div><input class="form-input" type="text" id="new-student-name" placeholder="이름"></div>
           <button class="btn btn-success" onclick="addStudentAccount()" style="white-space:nowrap">추가</button>
         </div>
       </div>
@@ -635,9 +693,7 @@
           <button class="pw-eye" onclick="togglePw('my-new-pw2', this)">👁</button>
         </div>
       </div>
-      <div style="font-size:0.76rem;color:var(--text-muted);margin-bottom:16px">
-        ※ 변경하지 않을 항목은 비워두세요.
-      </div>
+      <div style="font-size:0.76rem;color:var(--text-muted);margin-bottom:16px">※ 변경하지 않을 항목은 비워두세요.</div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-ghost" onclick="closeMyAccount()">취소</button>
         <button class="btn btn-amber" onclick="saveMyAccount()">저장</button>
@@ -790,12 +846,39 @@ const SCHOOL_TYPES = {
 };
 
 // ============ ACCOUNT DATA ============
-// accounts: { id, pw, role: 'admin'|'student', name }
 let accounts = [
   { id: '성완T', pw: '1234', role: 'admin', name: '성완T' }
 ];
+let currentUser = null;
 
-let currentUser = null; // { id, pw, role, name }
+// ============ FIREBASE 상태 ============
+let fbReady = false;
+let fbUnsubPosts = null;   // 게시글 리스너 해제 함수
+let fbUnsubLikes = null;   // 좋아요 리스너 해제 함수
+
+// Firebase 연결 상태 UI 업데이트
+function setFbStatus(status) {
+  const dot = document.getElementById('fb-dot');
+  const txt = document.getElementById('fb-status-text');
+  if (status === 'connected') {
+    dot.className = 'fb-dot connected';
+    txt.textContent = '실시간 동기화 중';
+  } else if (status === 'error') {
+    dot.className = 'fb-dot error';
+    txt.textContent = 'Firebase 연결 실패';
+  } else {
+    dot.className = 'fb-dot';
+    txt.textContent = 'Firebase 연결 중...';
+  }
+}
+
+// Firebase 준비 이벤트 대기
+document.addEventListener('firebase-ready', () => {
+  fbReady = true;
+  setFbStatus('connected');
+  // 로그인 상태면 리스너 시작
+  if (currentUser) startFirebaseListeners();
+});
 
 // ============ AUTH ============
 function doLogin() {
@@ -821,10 +904,20 @@ function doLogin() {
   document.getElementById('my-account-btn').style.display = 'block';
 
   renderSchoolInfo();
-  renderPosts();
+
+  if (fbReady) {
+    startFirebaseListeners();
+  } else {
+    // Firebase 아직 로드 안됐으면 로컬 데이터로 먼저 렌더
+    renderPosts();
+  }
 }
 
 function doLogout() {
+  // 리스너 해제
+  if (fbUnsubPosts) { fbUnsubPosts(); fbUnsubPosts = null; }
+  if (fbUnsubLikes) { fbUnsubLikes(); fbUnsubLikes = null; }
+
   currentUser = null;
   document.getElementById('login-id').value = '';
   document.getElementById('login-pw').value = '';
@@ -839,6 +932,81 @@ function togglePw(inputId, btn) {
   btn.textContent = el.type === 'password' ? '👁' : '🙈';
 }
 
+// ============ FIREBASE LISTENERS ============
+// posts: { id, type, sub, title, content, date, hasImage, imageData }
+// comments/{postId}/{commentKey}: { author, text, date }
+// likes/{postId}/{commentKey}/{userId}: true  ← 댓글 좋아요
+// postLikes/{postId}/{userId}: true  ← 게시글 좋아요 (미사용, 확장 가능)
+
+let posts = [];
+let commentsCache = {};  // postId -> { commentKey: {author,text,date,likes:{userId:true}} }
+let likesCache = {};     // `${postId}_${commentKey}` -> { userId: true }
+
+function startFirebaseListeners() {
+  const { db, ref, onValue } = window.__fb;
+
+  // ---- 게시글 실시간 리스너 ----
+  const postsRef = ref(db, 'posts');
+  fbUnsubPosts = onValue(postsRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      posts = Object.entries(data).map(([key, val]) => ({
+        ...val,
+        firebaseKey: key,
+        comments: []  // comments는 별도 노드에서
+      })).sort((a, b) => b.id - a.id);
+    } else {
+      // Firebase에 데이터 없으면 초기 데이터 업로드
+      posts = getDefaultPosts();
+      uploadDefaultPosts();
+    }
+    renderPosts();
+  }, (error) => {
+    console.error('Posts listener error:', error);
+    setFbStatus('error');
+    posts = getDefaultPosts();
+    renderPosts();
+  });
+
+  // ---- 댓글 + 좋아요 실시간 리스너 ----
+  const commentsRef = ref(db, 'comments');
+  fbUnsubLikes = onValue(commentsRef, (snapshot) => {
+    commentsCache = snapshot.val() || {};
+    // 현재 열린 디테일 모달이 있으면 댓글 다시 렌더
+    if (currentPostId !== null) {
+      renderComments(currentPostId);
+    }
+    renderPosts(); // 댓글 수 업데이트
+  }, (error) => {
+    console.error('Comments listener error:', error);
+  });
+}
+
+function getDefaultPosts() {
+  return [
+    { id: 1, type: "인문계", sub: "", title: "2025 수능 등급컷 최종 분석", content: "2025학년도 대학수학능력시험 등급컷이 확정되었습니다.\n\n■ 국어 영역\n1등급: 92점 이상\n2등급: 84점 이상\n\n■ 수학 영역 (공통+선택)\n1등급: 89점 이상\n2등급: 81점 이상\n\n■ 영어 영역\n1등급 비율: 전체 응시자의 약 4.7%", date: "2025-11-30", hasImage: false, imageData: null },
+    { id: 2, type: "특성화고", sub: "요식업", title: "조리특성화고 입학 가이드 2025", content: "조리특성화고등학교 입학을 위한 준비사항 및 전형 일정을 안내합니다.\n\n◆ 주요 전형\n- 일반전형: 중학교 내신 성적 반영\n- 특별전형: 관련 실기 평가 포함\n\n◆ 전형 일정\n- 원서 접수: 12월 초\n- 실기 고사: 12월 중순\n- 최종 발표: 12월 말", date: "2025-11-28", hasImage: false, imageData: null },
+    { id: 3, type: "특목고", sub: "과고", title: "과학고 입시 준비 로드맵", content: "과학고등학교 합격을 위한 단계별 준비 방법을 안내합니다.\n\n▶ 1단계 (중1~중2): 기초 실력 다지기\n- 수학·과학 경시대회 준비\n- R&E 프로그램 참여\n\n▶ 2단계 (중2~중3): 서류 완성\n- 자기소개서 초안 작성\n\n▶ 3단계: 면접 준비\n- 수학·과학 심층 면접 대비", date: "2025-11-25", hasImage: false, imageData: null },
+    { id: 4, type: "마이스터고", sub: "", title: "2026 마이스터고 모집 공고 종합", content: "2026학년도 전국 마이스터고등학교 신입생 모집 일정 종합 안내입니다.\n\n■ 지원 자격\n- 중학교 졸업(예정)자\n\n■ 전형 방법\n- 1단계: 서류 평가 (학생부, 자기소개서)\n- 2단계: 면접 및 실기\n\n■ 취업 연계\n주요 대기업 및 공공기관과 협약을 맺고 있어 졸업 후 바로 취업 연계가 가능합니다.", date: "2025-11-20", hasImage: false, imageData: null },
+    { id: 5, type: "자사고/자공고", sub: "", title: "자사고 폐지 논란과 현재 현황", content: "자율형 사립고등학교 존폐 논란과 현재 운영 현황에 대해 정리합니다.\n\n◆ 현황\n현재 전국 다수의 자사고가 재지정 심사를 통해 운영 중입니다.\n\n◆ 입시 특징\n- 독자적인 교육과정 운영\n- 다양한 방과후 프로그램\n- 대입 실적 우수", date: "2025-11-15", hasImage: false, imageData: null },
+    { id: 6, type: "특성화고", sub: "기술", title: "전자/IT 특성화고 취업률 분석", content: "전자·IT 계열 특성화고 졸업생의 취업 현황 및 주요 취업처를 분석합니다.\n\n■ 취업률 현황\n전자 계열 특성화고 평균 취업률: 72%\nIT 계열 특성화고 평균 취업률: 68%\n\n■ 주요 취업처\n- 삼성전자, LG전자 협력사\n- IT 스타트업\n- 공공기관 기술직", date: "2025-11-10", hasImage: false, imageData: null },
+  ];
+}
+
+function uploadDefaultPosts() {
+  if (!fbReady) return;
+  const { db, ref, set } = window.__fb;
+  const defaultPosts = getDefaultPosts();
+  defaultPosts.forEach(p => {
+    set(ref(db, `posts/${p.id}`), {
+      id: p.id, type: p.type, sub: p.sub, title: p.title,
+      content: p.content, date: p.date, hasImage: p.hasImage, imageData: p.imageData || null
+    });
+  });
+}
+
+let nextId = 100; // Firebase 사용시 타임스탬프 기반 ID
+
 // ============ ACCOUNT MANAGEMENT ============
 function openAccountsMgr() {
   renderAccountsTable();
@@ -847,16 +1015,12 @@ function openAccountsMgr() {
   document.getElementById('new-student-name').value = '';
   document.getElementById('accounts-modal').classList.add('open');
 }
-function closeAccountsMgr() {
-  document.getElementById('accounts-modal').classList.remove('open');
-}
+function closeAccountsMgr() { document.getElementById('accounts-modal').classList.remove('open'); }
 
 function renderAccountsTable() {
   const admins = accounts.filter(a => a.role === 'admin');
   const students = accounts.filter(a => a.role === 'student');
-
   document.getElementById('student-count-label').textContent = `(${students.length}명)`;
-
   document.getElementById('admin-accounts-tbody').innerHTML = admins.map(a => buildAccountRow(a)).join('');
   document.getElementById('student-accounts-tbody').innerHTML = students.length
     ? students.map(a => buildAccountRow(a)).join('')
@@ -882,8 +1046,6 @@ function buildAccountRow(a) {
 function startEditAccount(accountId) {
   const a = accounts.find(x => x.id === accountId);
   if (!a) return;
-  const tbody = a.role === 'admin' ? 'admin-accounts-tbody' : 'student-accounts-tbody';
-  // Replace row with inline edit
   document.getElementById(`row-${accountId}`).outerHTML = `
     <tr class="inline-edit-row" id="editrow-${accountId}">
       <td><span class="account-role-badge ${a.role}">${a.role === 'admin' ? '관리자' : '학생'}</span></td>
@@ -903,24 +1065,15 @@ function saveAccountEdit(oldId) {
   const newId   = document.getElementById(`ei-id-${oldId}`).value.trim();
   const newPw   = document.getElementById(`ei-pw-${oldId}`).value.trim();
   const newName = document.getElementById(`ei-name-${oldId}`).value.trim();
-
   if (!newId || !newPw || !newName) { showToast('모든 항목을 입력해주세요.'); return; }
-
-  // Check duplicate id (ignore same account)
   const duplicate = accounts.find(a => a.id === newId && a.id !== oldId);
   if (duplicate) { showToast('이미 사용 중인 아이디입니다.'); return; }
-
   const acc = accounts.find(a => a.id === oldId);
-  acc.id   = newId;
-  acc.pw   = newPw;
-  acc.name = newName;
-
-  // If currently logged-in user changed their own info, update session
+  acc.id = newId; acc.pw = newPw; acc.name = newName;
   if (currentUser && currentUser.id === oldId) {
     currentUser = acc;
     document.getElementById('topbar-username').textContent = acc.name;
   }
-
   renderAccountsTable();
   showToast('계정이 수정되었습니다.');
 }
@@ -940,7 +1093,6 @@ function addStudentAccount() {
   const name = document.getElementById('new-student-name').value.trim();
   if (!id || !pw || !name) { showToast('아이디, 비밀번호, 이름을 모두 입력해주세요.'); return; }
   if (accounts.find(a => a.id === id)) { showToast('이미 사용 중인 아이디입니다.'); return; }
-
   accounts.push({ id, pw, role: 'student', name });
   document.getElementById('new-student-id').value = '';
   document.getElementById('new-student-pw').value = '';
@@ -958,40 +1110,26 @@ function openMyAccount() {
   document.getElementById('my-new-pw2').value = '';
   document.getElementById('my-account-modal').classList.add('open');
 }
-function closeMyAccount() {
-  document.getElementById('my-account-modal').classList.remove('open');
-}
+function closeMyAccount() { document.getElementById('my-account-modal').classList.remove('open'); }
 
 function saveMyAccount() {
   const newId  = document.getElementById('my-new-id').value.trim();
   const curPw  = document.getElementById('my-cur-pw').value;
   const newPw  = document.getElementById('my-new-pw').value;
   const newPw2 = document.getElementById('my-new-pw2').value;
-
-  // At least one field must be filled
   if (!newId && !newPw) { showToast('변경할 항목을 입력해주세요.'); return; }
-
-  // If changing password, current password is required
   if (newPw || curPw) {
     if (!curPw) { showToast('현재 비밀번호를 입력해주세요.'); return; }
     if (curPw !== currentUser.pw) { showToast('현재 비밀번호가 올바르지 않습니다.'); return; }
     if (!newPw) { showToast('새 비밀번호를 입력해주세요.'); return; }
     if (newPw !== newPw2) { showToast('새 비밀번호가 일치하지 않습니다.'); return; }
   }
-
   const acc = accounts.find(a => a.id === currentUser.id);
-
   if (newId && newId !== currentUser.id) {
     if (accounts.find(a => a.id === newId)) { showToast('이미 사용 중인 아이디입니다.'); return; }
-    acc.id = newId;
-    currentUser.id = newId;
+    acc.id = newId; currentUser.id = newId;
   }
-
-  if (newPw) {
-    acc.pw = newPw;
-    currentUser.pw = newPw;
-  }
-
+  if (newPw) { acc.pw = newPw; currentUser.pw = newPw; }
   closeMyAccount();
   showToast('계정 정보가 변경되었습니다.');
 }
@@ -1002,7 +1140,6 @@ function renderSchoolInfo() {
   const types = currentType === "전체"
     ? Object.keys(SCHOOL_TYPES)
     : (SCHOOL_TYPES[currentType] ? [currentType] : []);
-
   grid.innerHTML = types.map(t => {
     const info = SCHOOL_TYPES[t];
     const subs = info.subs.filter(s => s !== "전체");
@@ -1017,37 +1154,16 @@ function renderSchoolInfo() {
   }).join('');
 }
 
-// ============ POSTS DATA ============
-let posts = [
-  { id: 1, type: "인문계", sub: "", title: "2025 수능 등급컷 최종 분석", content: "2025학년도 대학수학능력시험 등급컷이 확정되었습니다.\n\n■ 국어 영역\n1등급: 92점 이상\n2등급: 84점 이상\n\n■ 수학 영역 (공통+선택)\n1등급: 89점 이상\n2등급: 81점 이상\n\n■ 영어 영역\n1등급 비율: 전체 응시자의 약 4.7%", date: "2025-11-30", comments: [], hasImage: false, imageData: null },
-  { id: 2, type: "특성화고", sub: "요식업", title: "조리특성화고 입학 가이드 2025", content: "조리특성화고등학교 입학을 위한 준비사항 및 전형 일정을 안내합니다.\n\n◆ 주요 전형\n- 일반전형: 중학교 내신 성적 반영\n- 특별전형: 관련 실기 평가 포함\n\n◆ 전형 일정\n- 원서 접수: 12월 초\n- 실기 고사: 12월 중순\n- 최종 발표: 12월 말", date: "2025-11-28", comments: [], hasImage: false, imageData: null },
-  { id: 3, type: "특목고", sub: "과고", title: "과학고 입시 준비 로드맵", content: "과학고등학교 합격을 위한 단계별 준비 방법을 안내합니다.\n\n▶ 1단계 (중1~중2): 기초 실력 다지기\n- 수학·과학 경시대회 준비\n- R&E 프로그램 참여\n\n▶ 2단계 (중2~중3): 서류 완성\n- 자기소개서 초안 작성\n\n▶ 3단계: 면접 준비\n- 수학·과학 심층 면접 대비", date: "2025-11-25", comments: [{ author: "김학생", text: "면접 기출 문제도 올려주실 수 있나요?", date: "2025-11-26" }], hasImage: false, imageData: null },
-  { id: 4, type: "마이스터고", sub: "", title: "2026 마이스터고 모집 공고 종합", content: "2026학년도 전국 마이스터고등학교 신입생 모집 일정 종합 안내입니다.\n\n■ 지원 자격\n- 중학교 졸업(예정)자\n\n■ 전형 방법\n- 1단계: 서류 평가 (학생부, 자기소개서)\n- 2단계: 면접 및 실기\n\n■ 취업 연계\n주요 대기업 및 공공기관과 협약을 맺고 있어 졸업 후 바로 취업 연계가 가능합니다.", date: "2025-11-20", comments: [], hasImage: false, imageData: null },
-  { id: 5, type: "자사고/자공고", sub: "", title: "자사고 폐지 논란과 현재 현황", content: "자율형 사립고등학교 존폐 논란과 현재 운영 현황에 대해 정리합니다.\n\n◆ 현황\n현재 전국 다수의 자사고가 재지정 심사를 통해 운영 중입니다.\n\n◆ 입시 특징\n- 독자적인 교육과정 운영\n- 다양한 방과후 프로그램\n- 대입 실적 우수", date: "2025-11-15", comments: [], hasImage: false, imageData: null },
-  { id: 6, type: "특성화고", sub: "기술", title: "전자/IT 특성화고 취업률 분석", content: "전자·IT 계열 특성화고 졸업생의 취업 현황 및 주요 취업처를 분석합니다.\n\n■ 취업률 현황\n전자 계열 특성화고 평균 취업률: 72%\nIT 계열 특성화고 평균 취업률: 68%\n\n■ 주요 취업처\n- 삼성전자, LG전자 협력사\n- IT 스타트업\n- 공공기관 기술직", date: "2025-11-10", comments: [], hasImage: false, imageData: null },
-];
-let nextId = 7;
+// ============ POSTS ============
 let currentType = "전체";
 let currentPostId = null;
 
-// ============ TABS ============
-function filterByType(type, btn) {
-  currentType = type;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  const subFilter = document.getElementById('sub-filter');
-  if (type !== "전체" && SCHOOL_TYPES[type] && SCHOOL_TYPES[type].subs.length > 1) {
-    subFilter.style.display = 'block';
-    subFilter.innerHTML = SCHOOL_TYPES[type].subs.map(s => `<option value="${s === "전체" ? "" : s}">${s}</option>`).join('');
-  } else {
-    subFilter.style.display = 'none';
-  }
-  renderSchoolInfo();
-  renderPosts();
+function getPostCommentCount(postId) {
+  const c = commentsCache[postId];
+  if (!c) return 0;
+  return Object.keys(c).length;
 }
 
-// ============ POSTS ============
 function getFilteredPosts() {
   let filtered = [...posts].sort((a, b) => b.id - a.id);
   if (currentType !== "전체") filtered = filtered.filter(p => p.type === currentType);
@@ -1060,6 +1176,21 @@ function getFilteredPosts() {
 
 function filterPosts() { renderPosts(); }
 
+function filterByType(type, btn) {
+  currentType = type;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const subFilter = document.getElementById('sub-filter');
+  if (type !== "전체" && SCHOOL_TYPES[type] && SCHOOL_TYPES[type].subs.length > 1) {
+    subFilter.style.display = 'block';
+    subFilter.innerHTML = SCHOOL_TYPES[type].subs.map(s => `<option value="${s === "전체" ? "" : s}">${s}</option>`).join('');
+  } else {
+    subFilter.style.display = 'none';
+  }
+  renderSchoolInfo();
+  renderPosts();
+}
+
 function renderPosts() {
   const list = document.getElementById('posts-list');
   const filtered = getFilteredPosts();
@@ -1068,7 +1199,9 @@ function renderPosts() {
     return;
   }
   const typeKey = t => t.replace('/자공고', '');
-  list.innerHTML = filtered.map(p => `
+  list.innerHTML = filtered.map(p => {
+    const commentCount = getPostCommentCount(p.id);
+    return `
     <div class="post-card" onclick="openDetail(${p.id})">
       <div class="post-card-accent bg-${typeKey(p.type)}"></div>
       <div class="post-card-top">
@@ -1088,11 +1221,11 @@ function renderPosts() {
         <span>${p.date}</span>
         <div class="actions">
           ${p.hasImage ? '<span class="has-image">이미지 첨부</span>' : ''}
-          <span class="comment-count">${p.comments.length}개</span>
+          <span class="comment-count">${commentCount}개</span>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ============ DETAIL MODAL ============
@@ -1101,7 +1234,6 @@ function openDetail(id) {
   if (!p) return;
   currentPostId = id;
   const typeKey = p.type.replace('/자공고', '');
-
   document.getElementById('d-title').textContent = p.title;
   document.getElementById('d-meta').innerHTML = `
     <span class="type-chip chip-${typeKey}">${p.type}</span>
@@ -1116,46 +1248,158 @@ function openDetail(id) {
   document.getElementById('detail-modal').classList.add('open');
 }
 
-function renderComments(id) {
-  const p = posts.find(x => x.id === id);
+// ============ 댓글 렌더 (좋아요 포함) ============
+function renderComments(postId) {
   const container = document.getElementById('d-comments');
-  document.getElementById('d-comment-header').textContent = `💬 댓글 (${p.comments.length})`;
-  if (!p.comments.length) {
+  const postComments = commentsCache[postId] || {};
+  const commentEntries = Object.entries(postComments).sort((a, b) => {
+    // 날짜순 정렬
+    return (a[1].date || '').localeCompare(b[1].date || '');
+  });
+
+  document.getElementById('d-comment-header').textContent = `💬 댓글 (${commentEntries.length})`;
+
+  if (!commentEntries.length) {
     container.innerHTML = `<div style="font-size:.82rem;color:var(--text-muted);padding:12px 0">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</div>`;
     return;
   }
+
   const colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#f43f5e','#06b6d4'];
-  container.innerHTML = p.comments.map((c,i) => `
-    <div class="comment-item">
-      <div class="comment-avatar" style="background:${colors[i%colors.length]}22;color:${colors[i%colors.length]}">${c.author[0]}</div>
-      <div class="comment-bubble">
-        <div class="comment-author">${c.author}</div>
-        <div class="comment-text">${c.text}</div>
-        <div class="comment-date">${c.date}</div>
-        ${currentUser && currentUser.role === 'admin' ? `<button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="deleteComment(${id}, ${i})">삭제</button>` : ''}
-      </div>
-    </div>
-  `).join('');
+  container.innerHTML = commentEntries.map(([key, c], i) => {
+    const likes = c.likes || {};
+    const likeCount = Object.keys(likes).length;
+    const isLiked = currentUser && likes[encodeUserId(currentUser.id)] === true;
+
+    return `
+      <div class="comment-item" id="comment-${postId}-${key}">
+        <div class="comment-avatar" style="background:${colors[i%colors.length]}22;color:${colors[i%colors.length]}">${(c.author||'?')[0]}</div>
+        <div class="comment-bubble">
+          <div class="comment-top-row">
+            <div class="comment-author">${c.author}</div>
+            ${currentUser && currentUser.role === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${postId},'${key}')">삭제</button>` : ''}
+          </div>
+          <div class="comment-text">${escapeHtml(c.text)}</div>
+          <div class="comment-bottom-row">
+            <div class="comment-date">${c.date}</div>
+            <button
+              class="like-btn ${isLiked ? 'liked' : ''}"
+              onclick="toggleLike(${postId}, '${key}', this)"
+              id="like-btn-${postId}-${key}"
+            >
+              <span class="heart">${isLiked ? '❤️' : '🤍'}</span>
+              <span class="like-count" id="like-count-${postId}-${key}">${likeCount}</span>
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
-function submitComment() {
+// userId에 특수문자 있을 수 있어서 Firebase key로 인코딩
+function encodeUserId(userId) {
+  return userId.replace(/[.#$\[\]/]/g, '_');
+}
+
+function escapeHtml(text) {
+  return (text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============ 좋아요 토글 (Firebase 실시간) ============
+async function toggleLike(postId, commentKey, btnEl) {
+  if (!currentUser) return;
+  if (!fbReady) { showToast('Firebase 연결을 확인해주세요.'); return; }
+
+  const { db, ref, set, remove, get } = window.__fb;
+  const userId = encodeUserId(currentUser.id);
+  const likePath = `comments/${postId}/${commentKey}/likes/${userId}`;
+  const likeRef = ref(db, likePath);
+
+  // 현재 상태 확인
+  const isLiked = btnEl.classList.contains('liked');
+
+  // UI 즉시 반영 (낙관적 업데이트)
+  const countEl = document.getElementById(`like-count-${postId}-${commentKey}`);
+  const heartEl = btnEl.querySelector('.heart');
+  const currentCount = parseInt(countEl.textContent) || 0;
+
+  if (isLiked) {
+    // 좋아요 취소
+    btnEl.classList.remove('liked');
+    heartEl.textContent = '🤍';
+    countEl.textContent = Math.max(0, currentCount - 1);
+    try {
+      await remove(likeRef);
+    } catch(e) {
+      // 롤백
+      btnEl.classList.add('liked');
+      heartEl.textContent = '❤️';
+      countEl.textContent = currentCount;
+      showToast('좋아요 취소 실패. 다시 시도해주세요.');
+    }
+  } else {
+    // 좋아요
+    btnEl.classList.add('liked');
+    heartEl.textContent = '❤️';
+    countEl.textContent = currentCount + 1;
+    // 팝 애니메이션 재실행
+    btnEl.classList.remove('liked');
+    void btnEl.offsetWidth;
+    btnEl.classList.add('liked');
+    try {
+      await set(likeRef, true);
+    } catch(e) {
+      // 롤백
+      btnEl.classList.remove('liked');
+      heartEl.textContent = '🤍';
+      countEl.textContent = currentCount;
+      showToast('좋아요 실패. 다시 시도해주세요.');
+    }
+  }
+}
+
+// ============ 댓글 등록 ============
+async function submitComment() {
   const text = document.getElementById('new-comment').value.trim();
   if (!text) return;
-  const p = posts.find(x => x.id === currentPostId);
+  if (!currentUser) return;
+
   const today = new Date().toISOString().split('T')[0];
-  p.comments.push({ author: currentUser.name, text, date: today });
-  document.getElementById('new-comment').value = '';
-  renderComments(currentPostId);
-  renderPosts();
-  showToast('댓글이 등록되었습니다.');
+  const commentData = { author: currentUser.name, text, date: today, likes: {} };
+
+  if (fbReady) {
+    const { db, ref, push } = window.__fb;
+    const commentsRef = ref(db, `comments/${currentPostId}`);
+    try {
+      await push(commentsRef, commentData);
+      document.getElementById('new-comment').value = '';
+      showToast('댓글이 등록되었습니다.');
+      // onValue 리스너가 자동으로 UI 업데이트
+    } catch(e) {
+      showToast('댓글 등록 실패. 다시 시도해주세요.');
+    }
+  } else {
+    // 로컬 폴백
+    if (!commentsCache[currentPostId]) commentsCache[currentPostId] = {};
+    commentsCache[currentPostId]['local_' + Date.now()] = commentData;
+    document.getElementById('new-comment').value = '';
+    renderComments(currentPostId);
+    renderPosts();
+    showToast('댓글이 등록되었습니다. (오프라인 모드)');
+  }
 }
 
-function deleteComment(postId, idx) {
+// ============ 댓글 삭제 ============
+async function deleteComment(postId, commentKey) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  posts.find(x => x.id === postId).comments.splice(idx, 1);
-  renderComments(postId);
-  renderPosts();
-  showToast('댓글이 삭제되었습니다.');
+  if (!fbReady) { showToast('Firebase 연결 필요'); return; }
+
+  const { db, ref, remove } = window.__fb;
+  try {
+    await remove(ref(db, `comments/${postId}/${commentKey}`));
+    showToast('댓글이 삭제되었습니다.');
+  } catch(e) {
+    showToast('댓글 삭제 실패.');
+  }
 }
 
 function closeDetail() {
@@ -1211,23 +1455,44 @@ function previewImage() {
   reader.readAsDataURL(file);
 }
 
-function submitPost() {
+async function submitPost() {
   const title = document.getElementById('f-title').value.trim();
   const content = document.getElementById('f-content').value.trim();
   const type = document.getElementById('f-type').value;
   const sub = document.getElementById('f-sub').value || '';
   if (!title || !content) { showToast('제목과 내용을 입력해주세요.'); return; }
+
   const preview = document.getElementById('f-preview');
   const hasImage = preview.style.display !== 'none' && preview.src;
   const today = new Date().toISOString().split('T')[0];
-  posts.unshift({ id: nextId++, type, sub, title, content, date: today, comments: [], hasImage: !!hasImage, imageData: hasImage ? preview.src : null });
-  closeUpload(); renderPosts(); showToast('자료가 업로드되었습니다!');
+  const newId = Date.now();
+
+  const postData = {
+    id: newId, type, sub, title, content, date: today,
+    hasImage: !!hasImage, imageData: hasImage ? preview.src : null
+  };
+
+  if (fbReady) {
+    const { db, ref, set } = window.__fb;
+    try {
+      await set(ref(db, `posts/${newId}`), postData);
+      closeUpload();
+      showToast('자료가 업로드되었습니다!');
+    } catch(e) {
+      showToast('업로드 실패. 다시 시도해주세요.');
+    }
+  } else {
+    posts.unshift(postData);
+    closeUpload(); renderPosts();
+    showToast('자료가 업로드되었습니다! (오프라인)');
+  }
 }
 
 // ============ EDIT ============
 function openEdit(id) {
   if (!currentUser || currentUser.role !== 'admin') return;
   const p = posts.find(x => x.id === id);
+  if (!p) return;
   document.getElementById('e-id').value = id;
   document.getElementById('e-type').value = p.type;
   updateEditSubSelect();
@@ -1237,23 +1502,52 @@ function openEdit(id) {
   document.getElementById('edit-modal').classList.add('open');
 }
 function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); }
-function saveEdit() {
+
+async function saveEdit() {
   const id = +document.getElementById('e-id').value;
-  const p = posts.find(x => x.id === id);
-  p.type = document.getElementById('e-type').value;
-  p.sub = document.getElementById('e-sub').value || '';
-  p.title = document.getElementById('e-title').value.trim();
-  p.content = document.getElementById('e-content').value.trim();
-  if (!p.title || !p.content) { showToast('제목과 내용을 입력해주세요.'); return; }
-  closeEdit(); renderPosts(); showToast('수정이 완료되었습니다.');
+  const type = document.getElementById('e-type').value;
+  const sub = document.getElementById('e-sub').value || '';
+  const title = document.getElementById('e-title').value.trim();
+  const content = document.getElementById('e-content').value.trim();
+  if (!title || !content) { showToast('제목과 내용을 입력해주세요.'); return; }
+
+  if (fbReady) {
+    const { db, ref, update } = window.__fb;
+    try {
+      await update(ref(db, `posts/${id}`), { type, sub, title, content });
+      closeEdit();
+      showToast('수정이 완료되었습니다.');
+    } catch(e) {
+      showToast('수정 실패. 다시 시도해주세요.');
+    }
+  } else {
+    const p = posts.find(x => x.id === id);
+    if (p) { p.type = type; p.sub = sub; p.title = title; p.content = content; }
+    closeEdit(); renderPosts();
+    showToast('수정이 완료되었습니다.');
+  }
 }
 
 // ============ DELETE ============
-function deletePost(id) {
+async function deletePost(id) {
   if (!currentUser || currentUser.role !== 'admin') return;
   if (!confirm('이 자료를 삭제하시겠습니까?')) return;
-  posts = posts.filter(p => p.id !== id);
-  renderPosts(); showToast('자료가 삭제되었습니다.');
+
+  if (fbReady) {
+    const { db, ref, remove } = window.__fb;
+    try {
+      await remove(ref(db, `posts/${id}`));
+      // 관련 댓글도 삭제
+      await remove(ref(db, `comments/${id}`));
+      showToast('자료가 삭제되었습니다.');
+    } catch(e) {
+      showToast('삭제 실패. 다시 시도해주세요.');
+    }
+  } else {
+    posts = posts.filter(p => p.id !== id);
+    renderPosts();
+    showToast('자료가 삭제되었습니다.');
+  }
 }
 
 // ============ TOAST ============
